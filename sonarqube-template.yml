@@ -131,7 +131,7 @@ objects:
     name: ${APPLICATION_NAME}-ldap-bind-dn
   type: kubernetes.io/basic-auth
 - apiVersion: apps/v1
-  kind: Deployment
+  kind: DeploymentConfig
   metadata:
     labels:
       app: ${APPLICATION_NAME}
@@ -153,7 +153,6 @@ objects:
       spec:
         containers:
           - name: sonarqube
-            image: ${SONAR_IMAGE}
             ports:
               - containerPort: 9000
                 protocol: TCP
@@ -258,6 +257,17 @@ objects:
       rollingUpdate:
         maxUnavailable: 25%
         maxSurge: 25%
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - sonarqube
+        from:
+          kind: ImageStreamTag
+          namespace: openshift
+          name: sonarqube:latest
+      type: ImageChange
+    - type: ConfigChange       
 - apiVersion: v1
   kind: Route
   metadata:
@@ -384,8 +394,3 @@ parameters:
     description: The ContextFactory implementation to be used when communicating with the LDAP server
     displayName: LDAP Context Factory
     value: com.sun.jndi.ldap.LdapCtxFactory
-  - name: SONAR_IMAGE
-    description: SonarQube container image 
-    displayName: SonarQube container image 
-    value: docker.io/siamaksade/sonarqube:latest
-    
