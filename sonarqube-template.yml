@@ -130,7 +130,7 @@ objects:
   metadata:
     name: ${APPLICATION_NAME}-ldap-bind-dn
   type: kubernetes.io/basic-auth
-- apiVersion: apps/v1
+- apiVersion: apps.openshift.io/v1
   kind: DeploymentConfig
   metadata:
     labels:
