@@ -152,135 +152,142 @@ objects:
       requests:
         storage: ${SONARQUBE_PERSISTENT_VOLUME_SIZE}
   status: {}
-- apiVersion: apps/v1
-  kind: Deployment
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
   metadata:
+    generation: 1
     labels:
-      app: ${APPLICATION_NAME}
-      app.kubernetes.io/component: app
-      app.kubernetes.io/instance: ${APPLICATION_NAME}
-      app.kubernetes.io/name: ${APPLICATION_NAME}
-      app.kubernetes.io/part-of: ${APPLICATION_NAME}
-    name: ${APPLICATION_NAME}
+      app: sonarqube
+    name: sonarqube
   spec:
     replicas: 1
     selector:
-      matchLabels:
-        app: ${APPLICATION_NAME}
+      app: sonarqube
+      deploymentconfig: sonarqube
+    strategy:
+      activeDeadlineSeconds: 21600
+      type: Recreate
     template:
       metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
         labels:
-          app: ${APPLICATION_NAME}
-          deploymentconfig: ${APPLICATION_NAME}
+          app: sonarqube
+          deploymentconfig: sonarqube
       spec:
         containers:
-          - name: sonarqube
-            image: ${SONAR_IMAGE}
-            ports:
-              - containerPort: 9000
-                protocol: TCP
-            env:
-            - name: JDBC_URL
-              value: jdbc:postgresql://${APPLICATION_NAME}-postgresql:5432/sonar
-            - name: JDBC_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  key: database-user
-                  name: ${APPLICATION_NAME}-postgresql
-            - name: JDBC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  key: database-password
-                  name: ${APPLICATION_NAME}-postgresql
-            - name: FORCE_AUTHENTICATION
-              value: ${FORCE_AUTHENTICATION}
-            - name: PROXY_HOST
-              value: ${PROXY_HOST}
-            - name: PROXY_PORT
-              value: ${PROXY_PORT}
-            - name: PROXY_USER
-              value: ${PROXY_USER}
-            - name: PROXY_PASSWORD
-              value: ${PROXY_PASSWORD}
-            - name: LDAP_URL
-              value: ${SONAR_LDAP_URL}
-            - name: LDAP_REALM
-              value: ${SONAR_AUTH_REALM}
-            - name: LDAP_AUTHENTICATION
-              value: ${SONAR_LDAP_BIND_METHOD}
-            - name: LDAP_USER_BASEDN
-              value: ${SONAR_BASE_DN}
-            - name: LDAP_USER_REAL_NAME_ATTR
-              value: ${SONAR_LDAP_USER_REAL_NAME_ATTR}
-            - name: LDAP_USER_EMAIL_ATTR
-              value: ${SONAR_LDAP_USER_EMAIL_ATTR}
-            - name: LDAP_USER_REQUEST
-              value: ${SONAR_LDAP_USER_REQUEST}
-            - name: LDAP_GROUP_BASEDN
-              value: ${SONAR_LDAP_GROUP_BASEDN}
-            - name: LDAP_GROUP_REQUEST
-              value: ${SONAR_LDAP_GROUP_REQUEST}
-            - name: LDAP_GROUP_ID_ATTR
-              value: ${SONAR_LDAP_GROUP_ID_ATTR}
-            - name: LDAP_CONTEXTFACTORY
-              value: ${SONAR_LDAP_CONTEXTFACTORY}
-            - name: SONAR_AUTOCREATE_USERS
-              value: ${SONAR_AUTOCREATE_USERS}
-            - name: LDAP_BINDDN
-              valueFrom:
-                secretKeyRef:
-                  key: username
-                  name: ${APPLICATION_NAME}-ldap-bind-dn
-            - name: LDAP_BINDPASSWD
-              valueFrom:
-                secretKeyRef:
-                  key: password
-                  name: ${APPLICATION_NAME}-ldap-bind-dn
-            livenessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /
-                port: 9000
-                scheme: HTTP
-              initialDelaySeconds: 45
-              periodSeconds: 10
-              successThreshold: 1
-              timeoutSeconds: 1
-            readinessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /
-                port: 9000
-                scheme: HTTP
-              initialDelaySeconds: 10
-              periodSeconds: 10
-              successThreshold: 1
-              timeoutSeconds: 1
-            resources:
-              requests:
-                cpu: 200m
-                memory: 1Gi
-              limits:
-                cpu: ${SONARQUBE_CPU_LIMIT}
-                memory: ${SONARQUBE_MEMORY_LIMIT}
-            volumeMounts:
-              - name: sonarqube
-                mountPath: /opt/sonarqube/data
-            terminationMessagePath: /dev/termination-log
-            terminationMessagePolicy: File
-            imagePullPolicy: Always
-        volumes:
-        - name: sonarqube
-          persistentVolumeClaim:
-            claimName: ${APPLICATION_NAME}-data
-        restartPolicy: Always
-        terminationGracePeriodSeconds: 30
+        - env:
+          - name: JDBC_URL
+            value: jdbc:postgresql://sonardb:5432/sonar
+          - name: JDBC_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: sonardb
+          - name: JDBC_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: sonardb
+          - name: FORCE_AUTHENTICATION
+            value: "true"
+          - name: PROXY_HOST
+            value: ${PROXY_HOST}
+          - name: PROXY_PORT
+            value: ${PROXY_PORT}
+          - name: PROXY_USER
+            value: ${PROXY_USER}
+          - name: PROXY_PASSWORD
+            value: ${PROXY_PASSWORD}
+          - name: LDAP_URL
+            value: ${SONAR_LDAP_URL}
+          - name: LDAP_REALM
+            value: ${SONAR_AUTH_REALM}
+          - name: LDAP_AUTHENTICATION
+            value: ${SONAR_LDAP_BIND_METHOD}
+          - name: LDAP_USER_BASEDN
+            value: ${SONAR_BASE_DN}
+          - name: LDAP_USER_REAL_NAME_ATTR
+            value: ${SONAR_LDAP_USER_REAL_NAME_ATTR}
+          - name: LDAP_USER_EMAIL_ATTR
+            value: ${SONAR_LDAP_USER_EMAIL_ATTR}
+          - name: LDAP_USER_REQUEST
+            value: ${SONAR_LDAP_USER_REQUEST}
+          - name: LDAP_GROUP_BASEDN
+            value: ${SONAR_LDAP_GROUP_BASEDN}
+          - name: LDAP_GROUP_REQUEST
+            value: ${SONAR_LDAP_GROUP_REQUEST}
+          - name: LDAP_GROUP_ID_ATTR
+            value: ${SONAR_LDAP_GROUP_ID_ATTR}
+          - name: LDAP_CONTEXTFACTORY
+            value: ${SONAR_LDAP_CONTEXTFACTORY}
+          - name: SONAR_AUTOCREATE_USERS
+            value: ${SONAR_AUTOCREATE_USERS}
+          - name: LDAP_BINDDN
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: sonar-ldap-bind-dn
+          - name: LDAP_BINDPASSWD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: sonar-ldap-bind-dn
+          - name: SONAR_SEARCH_JAVA_ADDITIONAL_OPTS
+            value: '-Dnode.store.allow_mmapfs=false'
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 9000
+              scheme: HTTP
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: sonarqube
+          ports:
+          - containerPort: 9000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 9000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /opt/sonarqube/data
+            name: sonar-data
         dnsPolicy: ClusterFirst
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxUnavailable: 25%
-        maxSurge: 25%
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: sonarqube
+        serviceAccountName: sonarqube
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: sonar-data
+          persistentVolumeClaim:
+            claimName: sonarqube-data
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - sonarqube
+        from:
+          kind: ImageStreamTag
+          name: sonarqube:latest
+      type: ImageChange
+    - type: ConfigChange
 - apiVersion: v1
   kind: Route
   metadata:
@@ -313,49 +320,34 @@ objects:
       deploymentconfig: ${APPLICATION_NAME}
     sessionAffinity: None
     type: ClusterIP
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    annotations:
+      serviceaccounts.openshift.io/oauth-redirectreference.sonarqube: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"sonarqube"}}'
+    name: sonarqube
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: sonarqube_view
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: view
+  subjects:
+  - kind: ServiceAccount
+    name: sonarqube
 parameters:
-  - description: The name for the application.
-    name: APPLICATION_NAME
-    required: true
-    value: sonarqube
-  - description: Password for the Posgres Database to be used by Sonarqube
-    displayName: Postgres password
-    name: POSTGRES_PASSWORD
-    generate: expression
-    from: '[a-zA-Z0-9]{16}'
-    required: true
-  - description: Username for the Posgres Database to be used by Sonarqube
-    displayName: Postgres username
-    name: POSTGRES_USERNAME
-    generate: expression
-    from: 'user[a-z0-9]{8}'
-    required: true
   - description: Database name for the Posgres Database to be used by Sonarqube
     displayName: Postgres database name
     name: POSTGRES_DATABASE_NAME
     value: sonar
     required: true
-  - description: Postgres Persistent volume claim size
-    displayName: Postgres Persistent volume claim size
-    name: POSTGRES_PERSISTENT_VOLUME_CLAIM_SIZE
-    value: 5Gi
-    required: true
-  - name: SONARQUBE_MEMORY_LIMIT
-    description: SonarQube memory
-    displayName: SonarQube memory
-    value: 2Gi
-  - name: SONARQUBE_CPU_LIMIT
-    description: SonarQube Container CPU limit
-    displayName: SonarQube Container CPU limit
-    value: "2"
   - name: SONARQUBE_PERSISTENT_VOLUME_SIZE
     description: The persistent storage volume for SonarQube to use for plugins/config/logs/etc...
     displayName: SonarQube Storage Space Size
     required: true
     value: 5Gi
-  - name: FORCE_AUTHENTICATION
-    displayName: Force authentication
-    value: "false"
   - name: SONAR_AUTH_REALM
     value: ''
     description: The type of authentication that SonarQube should be using (None or LDAP) (Ref - https://docs.sonarqube.org/display/PLUG/LDAP+Plugin)
@@ -417,8 +409,10 @@ parameters:
     description: The ContextFactory implementation to be used when communicating with the LDAP server
     displayName: LDAP Context Factory
     value: com.sun.jndi.ldap.LdapCtxFactory
-  - name: SONAR_IMAGE
-    description: SonarQube container image 
-    displayName: SonarQube container image 
-    value: docker.io/siamaksade/sonarqube:latest
-    
+  - name: JENKINS_URL
+    description: The Jenkins URL used for the webhook
+    displayName: Jenkins URL
+    value: http://jenkins
+  - name: SONAR_SEARCH_JAVA_ADDITIONAL_OPTS
+    description: Pass in additional Java opts to ElasticSearch
+    displayName: Add sonar.search.javaAdditionalOpts
