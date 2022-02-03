@@ -151,6 +151,16 @@ objects:
     resources:
       requests:
         storage: ${SONARQUBE_PERSISTENT_VOLUME_SIZE}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${APPLICATION_NAME}-ext-data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1G
   status: {}
 - apiVersion: apps.openshift.io/v1
   kind: DeploymentConfig
@@ -266,6 +276,8 @@ objects:
           volumeMounts:
           - mountPath: /opt/sonarqube/data
             name: sonar-data
+          - mountPath: /opt/sonarqube/extensions
+            name: sonar-ext
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -277,6 +289,9 @@ objects:
         - name: sonar-data
           persistentVolumeClaim:
             claimName: sonarqube-data
+        - name: sonar-ext
+          persistentVolumeClaim:
+            claimName: sonarqube-ext-data
     test: false
     triggers:
     - imageChangeParams:
