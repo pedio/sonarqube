@@ -1,6 +1,7 @@
 # SonarQube Image 
 
 This implementation use SonarQube lts community image from docker.io
+docker.io/library/sonarqube:lts-community
 
 ### sonarqube
 
