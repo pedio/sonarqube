@@ -21,6 +21,7 @@ oc create configmap sonar-conf --from-file=./sonar.properties
 
 or 
 
+```
 cat << 'EOF' | oc create -f -
 apiVersion: v1
 kind: ConfigMap
@@ -54,11 +55,14 @@ data:
     ldap.group.request=${env:LDAP_GROUP_REQUEST}
     ldap.group.idAttribute=${env:LDAP_GROUP_ID_ATTR}
 EOF
-
+```
 # import sonarqube container from docker.io
+```
 oc import-image sonarqube:latest --from=docker.io/library/sonarqube:lts-community --confirm --force -n sonarqube
+```
 
 # create persistent volumes
+```
 cat <<EOF | oc create -f -
 apiVersion: v1
 kind: PersistentVolume
@@ -78,7 +82,8 @@ spec:
     path: /exports/sonar
     server: 192.168.1.30
 EOF
-
+```
+```
 cat <<EOF | oc create -f -
 apiVersion: v1
 kind: PersistentVolume
@@ -98,7 +103,8 @@ spec:
     path: /exports/sonardb
     server: 192.168.1.30
 EOF
-
+```
+```
 cat <<EOF | oc create -f -
 apiVersion: v1
 kind: PersistentVolume
@@ -118,29 +124,38 @@ spec:
     path: /exports/sonar-ext-data
     server: 192.168.1.30
 EOF
+```
 
 # create template
+```
 oc create -f https://raw.githubusercontent.com/pedio/sonarqube/master/sonarqube-deployment-template.yml
+```
 
 # create app
+```
 oc new-app -f https://raw.githubusercontent.com/pedio/sonarqube/master/sonarqube-deployment-template.yml --param=SONARQUBE_MEMORY_LIMIT=2Gi
+```
 
-
+```
 oc set resources dc/sonardb --limits=cpu=200m,memory=512Mi --requests=cpu=50m,memory=128Mi
 oc set resources dc/sonarqube --limits=cpu=1,memory=2Gi --requests=cpu=200m,memory=256Mi
-
+```
 
 ## already done in template.  This is an option to change settings
+```
 oc set volume dc/sonarqube --add --overwrite --name=sonar-data --mount-path=/opt/sonarqube/data/ --type persistentVolumeClaim --claim-name=sonarqube-data
 oc set volume dc/sonarqube --add --overwrite --name=sonar-ext --mount-path=/opt/sonarqube/extensions --type persistentVolumeClaim --claim-name=sonarqube-ext-data
+```
 
 ## already done in template.  This is an option to change settings 
+```
 oc set volume dc/sonarqube --add --overwrite --name=sonar-conf --mount-path=/opt/sonarqube/conf/sonar.properties --sub-path=sonar.properties --type configmap --configmap-name=sonar-conf
-
+```
 
 # post setup
+```
 curl https://admin:redhat@sonarqube.apps.devops.cheers.local/api/webhooks/create -X POST -d "name=jenkins&url=https://jenkins/sonarqube-webhook/"
-
 oc label dc sonarqube "app.kubernetes.io/part-of"="sonarqube" --overwrite
 oc label dc sonardb "app.kubernetes.io/part-of"="sonarqube" --overwrite
+```
 
