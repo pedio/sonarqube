@@ -15,7 +15,9 @@ https://github.com/redhat-cop/containers-quickstarts/blob/master/sonarqube/.open
 oc new-project sonarqube
 
 # set configmap
+```
 oc create configmap sonar-conf --from-file=./sonar.properties
+```
 
 or 
 
