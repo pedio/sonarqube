@@ -3,6 +3,24 @@ kind: Template
 metadata:
   name: "sonarqube-persistent"
 objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+     name: sonarqube
+    namespace: sonarqube
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - annotations: null
+      from:
+        kind: DockerImage
+        name: docker.io/library/sonarqube:lts-community
+      generation: 3
+      importPolicy: {}
+      name: latest
+      referencePolicy:
+        type: Source
 - apiVersion: v1
   kind: Secret
   metadata:
@@ -278,6 +296,9 @@ objects:
             name: sonar-data
           - mountPath: /opt/sonarqube/extensions
             name: sonar-ext
+          - name: sonar-conf
+            mountPath: /opt/sonarqube/conf/sonar.properties
+            subPath: sonar.properties
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -292,6 +313,10 @@ objects:
         - name: sonar-ext
           persistentVolumeClaim:
             claimName: sonarqube-ext-data
+        - name: sonar-conf
+          configMap:
+            name: sonar-conf
+            defaultMode: 420
     test: false
     triggers:
     - imageChangeParams:
