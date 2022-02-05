@@ -3,6 +3,14 @@ kind: Template
 metadata:
   name: "sonarqube-persistent"
 objects:
+- apiVersion: v1
+  kind: Secret
+  stringData:
+    password: ${SONAR_LDAP_BIND_PASSWORD}
+    username: ${SONAR_LDAP_BIND_DN}
+  metadata:
+    name: sonar-ldap-bind-dn
+  type: kubernetes.io/basic-auth
 - apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
@@ -206,17 +214,18 @@ objects:
         containers:
         - env:
           - name: SONAR_JDBC_URL
-            value: jdbc:postgresql://sonardb:5432/sonar
+            value: jdbc:postgresql://${APPLICATION_NAME}-postgresql:5432/sonar
           - name: SONAR_JDBC_USERNAME
             valueFrom:
               secretKeyRef:
                 key: database-user
-                name: sonardb
+                name: ${APPLICATION_NAME}-postgresql
           - name: SONAR_JDBC_PASSWORD
             valueFrom:
               secretKeyRef:
                 key: database-password
-                name: sonardb
+                name: ${APPLICATION_NAME}-postgresql
+          - name: JDBC_URL
           - name: SONAR_FORCEAUTHENTICATION
             value: "true"
           - name: HTTP_PROXYHOST
@@ -494,4 +503,4 @@ parameters:
   - name: SONAR_IMAGE
     description: SonarQube container image 
     displayName: SonarQube container image 
-    value: docker.io/library/sonarqube:lts-community
+    value: docker.io/library/sonarqube:lts
