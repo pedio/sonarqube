@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: "sonarqube-persistent-community"
+  name: "sonarqube-persistent"
 objects:
 - apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
-     name: sonarqube
+    name: sonarqube
     namespace: sonarqube
   spec:
     lookupPolicy:
@@ -15,7 +15,7 @@ objects:
     - annotations: null
       from:
         kind: DockerImage
-        name: docker.io/library/sonarqube:lts-community
+        name: ${SONAR_IMAGE}
       generation: 3
       importPolicy: {}
       name: latest
@@ -146,7 +146,7 @@ objects:
             - postgresql
           from:
             kind: ImageStreamTag
-            name: 'postgresql:latest'
+            name: 'postgresql:10'
             namespace: 'openshift'
           lastTriggeredImage: ''
         type: ImageChange
@@ -205,58 +205,58 @@ objects:
       spec:
         containers:
         - env:
-          - name: JDBC_URL
+          - name: SONAR_JDBC_URL
             value: jdbc:postgresql://sonardb:5432/sonar
-          - name: JDBC_USERNAME
+          - name: SONAR_JDBC_USERNAME
             valueFrom:
               secretKeyRef:
                 key: database-user
                 name: sonardb
-          - name: JDBC_PASSWORD
+          - name: SONAR_JDBC_PASSWORD
             valueFrom:
               secretKeyRef:
                 key: database-password
                 name: sonardb
-          - name: FORCE_AUTHENTICATION
+          - name: SONAR_FORCEAUTHENTICATION
             value: "true"
-          - name: PROXY_HOST
-            value: ${PROXY_HOST}
-          - name: PROXY_PORT
-            value: ${PROXY_PORT}
-          - name: PROXY_USER
-            value: ${PROXY_USER}
-          - name: PROXY_PASSWORD
-            value: ${PROXY_PASSWORD}
+          - name: HTTP_PROXYHOST
+            value: ${HTTP_PROXYHOST}
+          - name: HTTP_PROXYPORT
+            value: ${HTTP_PROXYPORT}
+          - name: HTTP_PROXYUSER
+            value: ${HTTP_PROXYUSER}
+          - name: HTTP_PROXYPASSWORD
+            value: ${HTTP_PROXYPASSWORD}
           - name: LDAP_URL
             value: ${SONAR_LDAP_URL}
-          - name: LDAP_REALM
+          - name: SONAR_SECURITY_REALM
             value: ${SONAR_AUTH_REALM}
           - name: LDAP_AUTHENTICATION
             value: ${SONAR_LDAP_BIND_METHOD}
           - name: LDAP_USER_BASEDN
             value: ${SONAR_BASE_DN}
-          - name: LDAP_USER_REAL_NAME_ATTR
-            value: ${SONAR_LDAP_USER_REAL_NAME_ATTR}
-          - name: LDAP_USER_EMAIL_ATTR
-            value: ${SONAR_LDAP_USER_EMAIL_ATTR}
+          - name: LDAP_USER_REALNAMEATTRIBUTE
+            value: ${SONAR_LDAP_USER_REALNAMEATTRIBUTE}
+          - name: LDAP_USER_EMAILATTRIBUTE
+            value: ${SONAR_LDAP_USER_EMAILATTRIBUTE}
           - name: LDAP_USER_REQUEST
             value: ${SONAR_LDAP_USER_REQUEST}
           - name: LDAP_GROUP_BASEDN
             value: ${SONAR_LDAP_GROUP_BASEDN}
           - name: LDAP_GROUP_REQUEST
             value: ${SONAR_LDAP_GROUP_REQUEST}
-          - name: LDAP_GROUP_ID_ATTR
-            value: ${SONAR_LDAP_GROUP_ID_ATTR}
-          - name: LDAP_CONTEXTFACTORY
-            value: ${SONAR_LDAP_CONTEXTFACTORY}
-          - name: SONAR_AUTOCREATE_USERS
-            value: ${SONAR_AUTOCREATE_USERS}
+          - name: LDAP_GROUP_IDATTRIBUTE
+            value: ${SONAR_LDAP_GROUP_IDATTRIBUTE}
+          - name: LDAP_CONTEXTFACTORYCLASS
+            value: ${SONAR_LDAP_CONTEXTFACTORYCLASS}
+          - name: SONAR_AUTHENTICATOR_CREATEUSERS
+            value: ${SONAR_AUTHENTICATOR_CREATEUSERS}
           - name: LDAP_BINDDN
             valueFrom:
               secretKeyRef:
                 key: username
                 name: sonar-ldap-bind-dn
-          - name: LDAP_BINDPASSWD
+          - name: LDAP_BINDPASSWORD
             valueFrom:
               secretKeyRef:
                 key: password
@@ -288,7 +288,13 @@ objects:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
-          resources: {}
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: ${SONARQUBE_CPU_LIMIT}
+              memory: ${SONARQUBE_MEMORY_LIMIT}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -378,11 +384,40 @@ objects:
   - kind: ServiceAccount
     name: sonarqube
 parameters:
+  - description: The name for the application.
+    name: APPLICATION_NAME
+    required: true
+    value: sonarqube
+  - description: Password for the Posgres Database to be used by Sonarqube
+    displayName: Postgres password
+    name: POSTGRES_PASSWORD
+    generate: expression
+    from: '[a-zA-Z0-9]{16}'
+    required: true
+  - description: Username for the Posgres Database to be used by Sonarqube
+    displayName: Postgres username
+    name: POSTGRES_USERNAME
+    generate: expression
+    from: 'user[a-z0-9]{8}'
+    required: true
   - description: Database name for the Posgres Database to be used by Sonarqube
     displayName: Postgres database name
     name: POSTGRES_DATABASE_NAME
     value: sonar
     required: true
+  - description: Postgres Persistent volume claim size
+    displayName: Postgres Persistent volume claim size
+    name: POSTGRES_PERSISTENT_VOLUME_CLAIM_SIZE
+    value: 5Gi
+    required: true
+  - name: SONARQUBE_MEMORY_LIMIT
+    description: SonarQube memory
+    displayName: SonarQube memory
+    value: 2Gi
+  - name: SONARQUBE_CPU_LIMIT
+    description: SonarQube Container CPU limit
+    displayName: SonarQube Container CPU limit
+    value: "2"
   - name: SONARQUBE_PERSISTENT_VOLUME_SIZE
     description: The persistent storage volume for SonarQube to use for plugins/config/logs/etc...
     displayName: SonarQube Storage Space Size
@@ -392,21 +427,21 @@ parameters:
     value: ''
     description: The type of authentication that SonarQube should be using (None or LDAP) (Ref - https://docs.sonarqube.org/display/PLUG/LDAP+Plugin)
     displayName: SonarQube Authentication Realm
-  - name: SONAR_AUTOCREATE_USERS
+  - name: SONAR_AUTHENTICATOR_CREATEUSERS
     value: 'false'
     description: When using an external authentication system, should SonarQube automatically create accounts for users?
     displayName: Enable auto-creation of users from external authentication systems?
     required: true
-  - name: PROXY_HOST
+  - name: HTTP_PROXYHOST
     description: Hostname of proxy server the SonarQube application should use to access the Internet
     displayName: Proxy server hostname/IP
-  - name: PROXY_PORT
+  - name: HTTP_PROXYPORT
     description: TCP port of proxy server the SonarQube application should use to access the Internet
     displayName: Proxy server port
-  - name: PROXY_USER
+  - name: HTTP_PROXYUSER
     description: Username credential when the Proxy Server requires authentication
     displayName: Proxy server username
-  - name: PROXY_PASSWORD
+  - name: HTTP_PROXYPASSWORD
     description: Password credential when the Proxy Server requires authentication
     displayName: Proxy server password
   - name: SONAR_LDAP_BIND_DN
@@ -418,7 +453,7 @@ parameters:
   - name: SONAR_LDAP_URL
     description: When using LDAP for authentication, this is the URL of the LDAP server in the form of ldap(s)://<hostname>:<port>
     displayName: LDAP Server URL
-  - name: SONAR_LDAP_REALM
+  - name: SONAR_SONAR_SECURITY_REALM
     description: When using LDAP, this allows for specifying a Realm within the directory server (Usually not used)
     displayName: LDAP Realm
   - name: SONAR_LDAP_AUTHENTICATION
@@ -427,10 +462,10 @@ parameters:
   - name: SONAR_LDAP_USER_BASEDN
     description: The Base DN under which SonarQube should search for user accounts in the LDAP directory
     displayName: LDAP User Base DN
-  - name: SONAR_LDAP_USER_REAL_NAME_ATTR
+  - name: SONAR_LDAP_USER_REALNAMEATTRIBUTE
     description: The LDAP attribute which should be referenced to get a user's full name
     displayName: LDAP Real Name Attribute
-  - name: SONAR_LDAP_USER_EMAIL_ATTR
+  - name: SONAR_LDAP_USER_EMAILATTRIBUTE
     description: The LDAP attribute which should be referenced to get a user's e-mail address
     displayName: LDAP User E-Mail Attribute
   - name: SONAR_LDAP_USER_REQUEST
@@ -442,10 +477,10 @@ parameters:
   - name: SONAR_LDAP_GROUP_REQUEST
     description: An LDAP filter to be used to search for group objects in the LDAP directory
     displayName: LDAP Group Request Filter
-  - name: SONAR_LDAP_GROUP_ID_ATTR
+  - name: SONAR_LDAP_GROUP_IDATTRIBUTE
     description: The LDAP attribute which should be referenced to get a group's ID
     displayName: LDAP Group Name Attribute
-  - name: SONAR_LDAP_CONTEXTFACTORY
+  - name: SONAR_LDAP_CONTEXTFACTORYCLASS
     description: The ContextFactory implementation to be used when communicating with the LDAP server
     displayName: LDAP Context Factory
     value: com.sun.jndi.ldap.LdapCtxFactory
@@ -456,3 +491,7 @@ parameters:
   - name: SONAR_SEARCH_JAVA_ADDITIONAL_OPTS
     description: Pass in additional Java opts to ElasticSearch
     displayName: Add sonar.search.javaAdditionalOpts
+  - name: SONAR_IMAGE
+    description: SonarQube container image 
+    displayName: SonarQube container image 
+    value: docker.io/library/sonarqube:lts-community
