@@ -137,7 +137,7 @@ oc new-app -f https://raw.githubusercontent.com/pedio/sonarqube/master/sonarqube
 ```
 
 ```
-oc set resources dc/sonardb --limits=cpu=200m,memory=512Mi --requests=cpu=50m,memory=128Mi
+oc set resources dc/sonarqube-postgresql --limits=cpu=200m,memory=512Mi --requests=cpu=50m,memory=128Mi
 oc set resources dc/sonarqube --limits=cpu=1,memory=2Gi --requests=cpu=200m,memory=256Mi
 ```
 
