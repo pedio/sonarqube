@@ -503,4 +503,4 @@ parameters:
   - name: SONAR_IMAGE
     description: SonarQube container image 
     displayName: SonarQube container image 
-    value: docker.io/library/sonarqube:lts
+    value: docker.io/library/sonarqube:lts-community
