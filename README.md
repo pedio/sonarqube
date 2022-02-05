@@ -88,7 +88,7 @@ cat <<EOF | oc create -f -
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: sonardb-pv
+  name: sonarqube-postgresql-pv
 spec:
   capacity:
     storage: 5Gi
@@ -98,7 +98,7 @@ spec:
   claimRef:
     namespace: sonarqube
     kind: PersistentVolumeClaim
-    name: sonardb
+    name: sonarqube-postgresql
   nfs:
     path: /exports/sonardb
     server: 192.168.1.30
@@ -109,7 +109,7 @@ cat <<EOF | oc create -f -
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: sonar-ext-pv
+  name: sonarqube-ext-pv
 spec:
   capacity:
     storage: 1Gi
@@ -119,7 +119,7 @@ spec:
   claimRef:
     namespace: sonarqube
     kind: PersistentVolumeClaim
-    name: sonarqube-ext
+    name: sonarqube-ext-data
   nfs:
     path: /exports/sonar-ext-data
     server: 192.168.1.30
