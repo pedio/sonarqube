@@ -225,7 +225,6 @@ objects:
               secretKeyRef:
                 key: database-password
                 name: ${APPLICATION_NAME}-postgresql
-          - name: JDBC_URL
           - name: SONAR_FORCEAUTHENTICATION
             value: "true"
           - name: HTTP_PROXYHOST
